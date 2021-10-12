@@ -1,0 +1,70 @@
+
+    // Method call
+    takeScreenshot(<layout-id>, <Text-to-Share>, <Activity-Context>);
+
+
+    /*  Method which will return Bitmap after taking screenshot. We have to pass the view which we want to take screenshot.  */
+    public static Bitmap getScreenShot(View screenView) {
+        screenView.setDrawingCacheEnabled(true);
+        Bitmap bitmap = Bitmap.createBitmap(screenView.getDrawingCache());
+        screenView.setDrawingCacheEnabled(false);
+
+        return bitmap;
+    }
+
+    /* This method will combine two Bitmaps and Join Vertically */
+    public static Bitmap combineBitmapImages(Bitmap c, Bitmap s, Context context) {
+        Bitmap cs;
+        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+        int width = metrics.widthPixels;
+        int height = metrics.heightPixels;
+        cs = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas comboImage = new Canvas(cs);
+        Rect dest1 = new Rect(0, 0, width, height); // left,top,right,bottom
+        comboImage.drawBitmap(c, null, dest1, null);
+        Rect dest2 = new Rect(0, height - 200, width, height);
+        comboImage.drawBitmap(s, null, dest2, null);
+
+        return Bitmap.createScaledBitmap(cs, cs.getWidth(), 1800, false);
+    }
+
+
+    public static void takeScreenshot(LinearLayout rootContent, String text, Context activity) {
+
+        /* Takes the Screenshot of Layout and creates Bitmap */
+        Bitmap b1 = ScreenshotUtils.getScreenShot(rootContent);
+
+        /* Takes the Image from drawable and creates Bitmap */
+        Bitmap bm = BitmapFactory.decodeResource(activity.getResources(), R.drawable.share_banner);
+
+        /* Combines Two Bitmap into One Bitmap */
+        Bitmap bitmap = combineBitmapImages(b1, bm, activity);
+
+        //If bitmap is not null
+        if (bitmap != null) {
+            ScreenshotUtils.share(activity, bitmap, text);
+        } else {
+            //If bitmap is null show toast message
+            Toast.makeText(activity, "Sharing failed", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public static void share(Context ctx, Bitmap bitmap, String text) {
+        try {
+
+            String pathOfBitmap = MediaStore.Images.Media.insertImage(ctx.getContentResolver(), bitmap, getAlphaNumericString(15), null);
+            Uri uri = Uri.parse(pathOfBitmap);
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, "Text Here");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+            ctx.startActivity(Intent.createChooser(shareIntent, "App"));
+        } catch (Exception e) {
+
+            Intent txtIntent = new Intent(android.content.Intent.ACTION_SEND);
+            txtIntent.setType("text/plain");
+            txtIntent.putExtra(android.content.Intent.EXTRA_TEXT, text);
+            ctx.startActivity(Intent.createChooser(txtIntent, "Share"));
+
+        }
+    }

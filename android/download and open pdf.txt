@@ -1,0 +1,45 @@
+////---------- Download PDF and Open if Already Downloaded ----------////
+
+    // Method call by passing PDF URL
+    downloadAndOpenPdf("");
+
+    // Download PDF if not exist
+    private void downloadAndOpenPdf(String mURL) {
+
+        String path;
+
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(mURL));
+        String title = URLUtil.guessFileName(mURL, null, "application/pdf");
+        request.setTitle(title);
+        request.setDescription("Downloading File...");
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, title);
+
+        if (title.endsWith(".pdf")) {
+            path = Environment.getExternalStorageDirectory().getPath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + title;
+        } else {
+            path = Environment.getExternalStorageDirectory().getPath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + title + ".pdf";
+        }
+
+        if (!new File(path).exists()) {
+            DownloadManager downloadManager = (DownloadManager) getContext().getSystemService(DOWNLOAD_SERVICE);
+            downloadManager.enqueue(request);
+        } else {
+            openPdf(path);
+        }
+    }
+
+    // Open PDF if Already Exist
+    private void openPdf(String path) {
+        File file = new File(path);
+        Uri path1 = FileProvider.getUriForFile(getContext(), getContext().getApplicationContext().getPackageName(), file);
+        try {
+            Intent pdfIntent = new Intent(Intent.ACTION_VIEW);
+            pdfIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            pdfIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            pdfIntent.setDataAndType(path1, "application/pdf");
+            startActivity(pdfIntent);
+        } catch (ActivityNotFoundException ignored) {
+
+        }
+    }

@@ -1,0 +1,121 @@
+# send fcm using spring and fcm dependency
+
+1) Setup Firebase messaging dependency
+To include the Firebase-SDK you need to add the following maven dependency to your project.
+
+<dependency>
+     <groupId>com.google.firebase</groupId>
+     <artifactId>firebase-admin</artifactId>
+     <version>7.0.0</version>
+</dependency>
+Code language: HTML, XML (xml)
+
+
+2) Get Service Account Private Key from FCM Console
+The next thing you have to do is to generate a service-account.json. For this open the Service Accounts in FCM console and click Generate Private Key.
+
+Screen to download firebase admin private key for sending notifications
+This will download a file in the form of <firebase-project>-firebase-adminsdk-<hash>.json. Save this file src/java/resources as firebase-service-account.json.
+
+
+3) Configure Spring Bean for Push notification (i added this method to controller)
+In our spring boot application, Let’s create an object for FirebaseMessaging and register it as a bean. This bean will be used to send notifications.
+
+
+@Bean
+FirebaseMessaging firebaseMessaging() throws IOException {
+    GoogleCredentials googleCredentials = GoogleCredentials
+            .fromStream(new ClassPathResource("firebase-service-account.json").getInputStream());
+    FirebaseOptions firebaseOptions = FirebaseOptions
+            .builder()
+            .setCredentials(googleCredentials)
+            .build();
+    FirebaseApp app = FirebaseApp.initializeApp(firebaseOptions, "my-app");
+    return FirebaseMessaging.getInstance(app);
+}
+Code language: Java (java)
+Here new ClassPathResource("firebase-service-account.json").getInputStream() is an easier way to create an InputStream for a file that is in classpath. With this we created a FirebaseApp object from which we got our FirebaseMessaging instance.
+
+
+4) Write a Push notification Service
+I wrote a simple FirebaseMessagingService by using the bean that we just created. In a very basic use case, the class would look like this.
+
+@Service
+public class FirebaseMessagingService {
+
+    private final FirebaseMessaging firebaseMessaging;
+
+    public FirebaseMessagingService(FirebaseMessaging firebaseMessaging) {
+        this.firebaseMessaging = firebaseMessaging;
+    }
+
+
+    public String sendNotification(Note note, String token) throws FirebaseMessagingException {
+
+        Notification notification = Notification
+                .builder()
+                .setTitle(note.getSubject())
+                .setBody(note.getContent())
+                .build();
+
+        Message message = Message
+                .builder()
+                .setToken(token)
+                .setNotification(notification)
+                .putAllData(note.getData())
+                .build();
+
+        return firebaseMessaging.send(message);
+    }
+
+}
+Code language: Java (java)
+
+
+4.1) Understand how Firebase Library works
+Here, The Notification object captures what Title and Body to show on the mobile notification.
+
+The Message object has multiple builder methods to deal with various scenarios.
+
+Send a message to a specific recipient by using setToken(String) or you can send it to anyone who is subscribed to a topic by using setTopic(String)
+Pass additional data to the mobile applications using putData(String, String) or putAllData(Map<String, String>).
+Customize options specific to Android, iOS and web clients using the below builder methods respectively.
+setAndroidConfig()
+setApnsConfig()
+setWebpushConfig()
+Each of these methods have a set of builder methods to back their confuguration further.
+Once you have created a message object with appropriate values, then you can call firebaseMessaging.send(Message) to submit the request. The method will return a String which represents the message ID that was sent during the API call. There is no need to store this value. Note that there can be a FirebaseMessagingException if there is an error while processing the message while sending. So make sure you handle it.
+
+
+5) Write a Test Controller
+Let’s write a simple test API call.
+
+@Data
+public class Note {
+    private String subject;
+    private String content;
+    private Map<String, String> data;
+    private String image;
+}
+
+/*******************************/
+
+@RequestMapping("/send-notification")
+@ResponseBody
+public String sendNotification(@RequestBody Note note,
+                               @RequestParam String token) throws FirebaseMessagingException {
+    return firebaseService.sendNotification(note, token);
+}
+
+
+************ Post Method using POSTMAN ************
+
+-Param
+	token : <user-token>
+
+-Body
+	{
+    	    "subject": "Title Here",
+    	    "content": "Message Here",
+    	    "image": "Image Link Here"
+	}
