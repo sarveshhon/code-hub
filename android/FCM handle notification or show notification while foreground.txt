@@ -59,3 +59,18 @@
             e.printStackTrace();
         }
     }
+
+
+******* Custom Sound *******
+
+
+    public void playNotificationSound() {
+        try {
+
+            Uri alarmSound = Uri.parse("android.resource://"+getApplicationContext().getPackageName()+"/"+R.raw.coin_tune);
+            Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), alarmSound);
+            r.play();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
