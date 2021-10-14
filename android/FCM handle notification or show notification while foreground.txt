@@ -1,0 +1,61 @@
+
+****** AndroidManifest.xml ******
+
+
+        <service android:name=".MyFirebaseMessagingService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+
+****** Code ******
+
+
+    buildNotification(remoteMessage.getNotification().getTitle(), remoteMessage.getNotification().getBody());
+
+    playNotificationSound();
+
+
+    private void buildNotification(String _title, String _body) {
+
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
+                new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+
+        NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
+
+        NotificationCompat.Builder builder = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel notificationChannel = new NotificationChannel("ID", "Name", importance);
+            notificationManager.createNotificationChannel(notificationChannel);
+            builder = new NotificationCompat.Builder(getApplicationContext(), notificationChannel.getId());
+        } else {
+            builder = new NotificationCompat.Builder(getApplicationContext());
+        }
+
+        builder = builder
+                .setSmallIcon(R.drawable.logo)
+                .setColor(ContextCompat.getColor(getApplicationContext(), R.color.purple_200))
+                .setContentTitle(_title)
+                .setContentText(_body)
+                .setDefaults(Notification.DEFAULT_ALL)
+                .setContentIntent(contentIntent)
+                .setAutoCancel(true)
+                .setPriority(Notification.PRIORITY_HIGH);
+
+        notificationManager.notify(1, builder.build());
+
+    }
+
+
+    public void playNotificationSound() {
+        try {
+
+            Uri alarmSound = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getApplicationContext().getPackageName() + "/raw/notification");
+            Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), alarmSound);
+            r.play();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
