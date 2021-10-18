@@ -1,6 +1,25 @@
 ////---------- Download PDF and Open if Already Downloaded ----------////
 
-    // Method call by passing PDF URL
+    // Create this file to layout->xml->provider_paths.xml
+	<?xml version="1.0" encoding="utf-8"?>
+	<paths>
+    		<external-path name="external_files" path="."/>
+	</paths>
+
+    // Add this in AndroidManifest.xml application tag
+	
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+
+
+     // Method call by passing PDF URL
     downloadAndOpenPdf("");
 
     // Download PDF if not exist
